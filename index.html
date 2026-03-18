@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ワードル (文字数自由・ヒント付き) – B2レベル</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #0b0b10;
+            font-family: 'Helvetica Neue', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .game-wrapper {
+            max-width: 750px;
+            width: 100%;
+            background: #1c1c26;
+            border-radius: 48px;
+            padding: 28px 24px 36px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px #42425a;
+            color: #f0f0fa;
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .main-title {
+            font-size: 2.8rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            background: linear-gradient(145deg, #ffb347, #6ba6ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 12px #6b8eff60;
+        }
+
+        .subtitle {
+            color: #bbb;
+            font-size: 1.1rem;
+            margin-top: 8px;
+            border-bottom: 1px dashed #4b4b64;
+            padding-bottom: 14px;
+        }
+
+        /* ターゲット情報 + ヒント */
+        .hint-panel {
+            background: #23232e;
+            border-radius: 36px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            border: 1px solid #55557a;
+            box-shadow: inset 0 0 8px #0b0b12;
+        }
+
+        .word-length-indicator {
+            font-size: 1.2rem;
+            color: #b4b4ff;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .target-placeholder {
+            background: #15151d;
+            border-radius: 48px;
+            padding: 16px 24px;
+            text-align: center;
+            font-size: 2.2rem;
+            letter-spacing: 8px;
+            font-weight: 600;
+            color: #ffe2b3;
+            border: 2px dashed #6b6b9c;
+            margin-bottom: 20px;
+            word-break: keep-all;
+        }
+
+        .hint-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 12px;
+            justify-content: center;
+            background: #1b1b29;
+            border-radius: 60px;
+            padding: 18px 18px;
+            border: 1px solid #6b6b99;
+        }
+
+        .hint-char {
+            background: #2d2d42;
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.7rem;
+            font-weight: 500;
+            color: #fadf9e;
+            border: 2px solid #6d6daa;
+            box-shadow: 0 5px 0 #1a1a28;
+        }
+
+        /* 入力フォーム */
+        .input-area {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        #guessInput {
+            flex: 3;
+            min-width: 200px;
+            background: #2c2c3b;
+            border: 2px solid #5b5b85;
+            border-radius: 60px;
+            padding: 0 25px;
+            font-size: 1.8rem;
+            font-family: inherit;
+            color: white;
+            caret-color: #ffae6a;
+            height: 75px;
+            text-transform: uppercase;
+        }
+
+        #guessInput:focus {
+            outline: none;
+            border-color: #c39eff;
+            box-shadow: 0 0 12px #a07df0;
+        }
+
+        #submitGuess {
+            flex: 1;
+            background: #40405c;
+            border: none;
+            border-radius: 60px;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            border-bottom: 5px solid #212130;
+            transition: 0.1s;
+            padding: 0 15px;
+            min-width: 130px;
+            height: 75px;
+        }
+
+        #submitGuess:active {
+            transform: translateY(4px);
+            border-bottom-width: 2px;
+        }
+
+        /* グリッド (試行) */
+        .guesses-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 30px 0 20px;
+            align-items: center;
+        }
+
+        .guess-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tile {
+            width: 60px;
+            height: 60px;
+            background: #2a2a38;
+            border: 2px solid #5a5a78;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #f5f5ff;
+            text-transform: uppercase;
+            transition: 0.15s;
+            box-shadow: 0 5px 0 #151520;
+        }
+
+        .tile.green {
+            background: #2e7d5e;
+            border-color: #6fcb9f;
+            box-shadow: 0 5px 0 #1b4a36;
+        }
+
+        .tile.yellow {
+            background: #b58a3b;
+            border-color: #f0c674;
+            box-shadow: 0 5px 0 #725520;
+        }
+
+        .tile.gray {
+            background: #4a4a5a;
+            border-color: #6a6a80;
+            box-shadow: 0 5px 0 #2d2d36;
+        }
+
+        /* 次の単語ボタン */
+        .next-btn-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0 20px;
+        }
+
+        #nextWordBtn {
+            background: #3b3b50;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            font-weight: 600;
+            padding: 1.2rem 3.2rem;
+            border-radius: 60px;
+            border-bottom: 6px solid #20202b;
+            cursor: pointer;
+            letter-spacing: 3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        #nextWordBtn:active {
+            transform: translateY(5px);
+            border-bottom-width: 2px;
+        }
+
+        /* ステータス */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            background: #21212d;
+            padding: 12px 25px;
+            border-radius: 60px;
+            border: 1px solid #55557a;
+            color: #c4c4f0;
+            margin-top: 20px;
+            font-size: 1rem;
+        }
+
+        .remaining {
+            background: #2f2f44;
+            padding: 2px 22px;
+            border-radius: 60px;
+            border: 1px solid #7b7bb2;
+        }
+    </style>
+</head>
+<body>
+<div class="game-wrapper" id="worddleApp">
+    <!-- タイトル (日本語指示) -->
+    <div class="title-section">
+        <h1 class="main-title"> 🍣 ワードル (自由文字数) 🍜 </h1>
+        <div class="subtitle">
+            ⬛ 3〜6文字の食べ物のことば。緑🟩=正しい位置　黄🟨=別の位置　灰⬜=その文字なし
+        </div>
+    </div>
+
+    <!-- ヒント・ターゲットエリア -->
+    <div class="hint-panel">
+        <div class="word-length-indicator">
+            <span>📏 文字数: <span id="lengthDisplay">?</span></span>
+            <span>🔤 ひらがな/カタカナ ヒント (15文字)</span>
+        </div>
+        <div class="target-placeholder" id="targetPlaceholder"> _ _ _ _ _ </div>
+        <div class="hint-container" id="hintChars">
+            <!-- 15文字のヒントが並ぶ -->
+        </div>
+    </div>
+
+    <!-- 入力 & 送信 -->
+    <div class="input-area">
+        <input type="text" id="guessInput" placeholder="ことばを入力" maxlength="6" autocomplete="off" autofocus>
+        <button id="submitGuess">⏎ 回答</button>
+    </div>
+
+    <!-- 推測グリッド (最大6行) -->
+    <div class="guesses-grid" id="guessesGrid"></div>
+
+    <!-- 次の単語ボタン -->
+    <div class="next-btn-wrapper">
+        <button id="nextWordBtn">▶ 次の単語</button>
+    </div>
+
+    <!-- 残り単語数表示 -->
+    <div class="status-bar">
+        <span>📋 残り単語: <span id="remainingCount">--</span> / <span id="totalCount">--</span></span>
+        <span class="remaining" id="currentState">🔄 推測してください</span>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ---------- 食べ物単語リスト (3〜6文字, カタカナ/ひらがな混在可, 表示はひらがなでもカタカナでもOK) ----------
+        const foodVocabulary = [
+            "サシミ",        // 3文字 (サシマ? サシミ 3)
+            "スシ",          // 3文字
+            "ラーメン",      // 4文字 (ラー・メ・ン) 長音1文字: 4文字扱い
+            "カレー",        // 3文字 (カレー → カ・レ・ー =3)
+            "オムレツ",      // 4文字 (オ・ム・レ・ツ =4)
+            "ギョウザ",      // 4文字 (ギョ・ウ・ザ) ギョ=1? ここでは小文字「ョ」を1文字として「ギョウザ」はギ,ョ,ウ,ザ=4
+            "ハンバーグ",    // 5文字 (ハ,ン,バ,ー,グ)
+            "ソーセージ",    // 5文字 (ソ,ー,セ,ー,ジ)
+            "エビフライ",    // 5文字 (エ,ビ,フ,ラ,イ)
+            "メンチカツ",    // 5文字 (メ,ン,チ,カ,ツ)
+            "チャーハン",    // 5文字 (チ,ャ,ー,ハ,ン)
+            "シュウマイ",    // 5文字 (シ,ュ,ウ,マ,イ)
+            "カツカレー",    // 5文字 (カ,ツ,カ,レ,ー)
+            "オムハヤシ",    // 5文字 (オ,ム,ハ,ヤ,シ)
+            "タコヤキ",      // 4文字 (タ,コ,ヤ,キ)
+            "タイ",          // 3文字
+            "サンマ",        // 3文字
+            "ニクジャガ",    // 5文字? ニ,ク,ジ,ャ,ガ=5 (肉じゃが)
+            "オニギリ",      // 4文字 (オ,ニ,ギ,リ)
+            "ウナギ",        // 3文字
+            "テンプラ",      // 4文字 (テ,ン,プ,ラ)
+            "サカナ",        // 3文字 (魚)
+            "ナットウ",      // 4文字 (ナ,ッ,ト,ウ)
+            "トウフ",        // 3文字 (豆腐)
+            "ヤサイ",        // 3文字 (野菜)
+            "ギュウニク",    // 5文字? ギ,ュ,ウ,ニ,ク=5 (牛肉)
+            "トリニク",      // 4文字 (トリニク)
+            "ブタニク",      // 4文字
+            "タマゴ",        // 3文字
+            "チーズ",        // 3文字
+            "パン",          // 2文字(対象外、念のため省く) -> 外す
+            "ケーキ",        // 3文字
+            "アイス",        // 3文字
+            "ヨウカン",      // 4文字(ヨ,ウ,カ,ン)
+        ];
+
+        // 3〜6文字のものだけフィルタ (文字数はString.lengthでOK。ただし長音・小文字は1文字扱いになるが日本語話者には自然)
+        const minLen = 3, maxLen = 6;
+        const catalog = foodVocabulary.filter(word => word.length >= minLen && word.length <= maxLen);
+        // 重複除去 (念のため)
+        const uniqueCatalog = [...new Set(catalog)];
+
+        // ---------- ゲーム状態 ----------
+        let remainingWords = [];          // まだ出題していない単語の配列
+        let currentWord = '';             // 現在のお題 (文字列)
+        let guesses = [];                 // これまでの推測行 (最大6)
+        const maxGuesses = 6;
+        let hintChars = [];                // 15文字のヒント配列
+
+        // DOM
+        const guessesGrid = document.getElementById('guessesGrid');
+        const targetPlaceholder = document.getElementById('targetPlaceholder');
+        const lengthDisplay = document.getElementById('lengthDisplay');
+        const hintContainer = document.getElementById('hintChars');
+        const guessInput = document.getElementById('guessInput');
+        const submitBtn = document.getElementById('submitGuess');
+        const nextBtn = document.getElementById('nextWordBtn');
+        const remainingSpan = document.getElementById('remainingCount');
+        const totalSpan = document.getElementById('totalCount');
+        const currentStateSpan = document.getElementById('currentState');
+
+        // シャッフル関数
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // 初期化 (残り単語リストを作成)
+        function initGame() {
+            remainingWords = shuffleArray([...uniqueCatalog]);
+            updateRemainingDisplay();
+            loadNextWord();
+        }
+
+        // 残数表示更新
+        function updateRemainingDisplay() {
+            remainingSpan.textContent = remainingWords.length;
+            totalSpan.textContent = uniqueCatalog.length;
+        }
+
+        // 現在の単語からヒント15文字を生成 (ひらがな・カタカナ混在, お題に含まれる文字を多めに含めつつランダム)
+        function generateHint(word) {
+            // ベース: あいうえお + カタカナなど, さらにwordに含まれる文字を必ず入れる
+            const baseKana = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポ";
+            // お題の文字を分解
+            const wordChars = word.split('');
+            // お題の文字をまず最大15まで詰める (重複あり)
+            let hintPool = [];
+            // 各文字を少なくとも1回は含む (重複して含めてもよい)
+            for (let ch of wordChars) {
+                hintPool.push(ch);
+            }
+            // 足りない分をbaseKanaからランダム補充, さらに余裕があればまた追加 (最終的に15文字)
+            while (hintPool.length < 15) {
+                const randomKana = baseKana[Math.floor(Math.random() * baseKana.length)];
+                hintPool.push(randomKana);
+            }
+            // 今あるhintPoolをシャッフル
+            hintPool = shuffleArray(hintPool);
+            // 先頭15文字にする (多ければ切り捨て)
+            hintChars = hintPool.slice(0, 15);
+            // お題の文字が含まれているか保証はする (少なくとも各文字1回は入っている)
+            // しかし文字数が多いと足りない場合もあるので、確実にするためwordCharsを一度ループして、もしhintに含まれていない文字があれば置き換える
+            let finalHints = [...hintChars];
+            for (let i = 0; i < wordChars.length; i++) {
+                const ch = wordChars[i];
+                if (!finalHints.includes(ch)) {
+                    // ランダムな位置をこの文字に差し替え
+                    const idx = Math.floor(Math.random() * finalHints.length);
+                    finalHints[idx] = ch;
+                }
+            }
+            // 最終調整: 再度シャッフル
+            finalHints = shuffleArray(finalHints);
+            hintChars = finalHints.slice(0,15);
+        }
+
+        // ヒント表示を更新
+        function renderHint() {
+            hintContainer.innerHTML = '';
+            hintChars.forEach(ch => {
+                const span = document.createElement('span');
+                span.className = 'hint-char';
+                span.textContent = ch;
+                hintContainer.appendChild(span);
+            });
+        }
+
+        // 次の単語をロード (remainingWordsの先頭)
+        function loadNextWord() {
+            if (remainingWords.length === 0) {
+                currentWord = '';
+                targetPlaceholder.textContent = '🎉 おわり';
+                lengthDisplay.textContent = '-';
+                hintContainer.innerHTML = ''; // ヒントクリア
+                currentStateSpan.innerHTML = 'コンプリート！';
+                guessInput.disabled = true;
+                submitBtn.disabled = true;
+                renderGrid();
+                return;
+            }
+            // 先頭を取り出して currentWord に (破壊的)
+            currentWord = remainingWords.shift(); 
+            // 文字数表示
+            lengthDisplay.textContent = currentWord.length;
+            // プレースホルダー (文字数分アンダーバー)
+            targetPlaceholder.textContent = ' _'.repeat(currentWord.length).trim();
+            // ヒント生成
+            generateHint(currentWord);
+            renderHint();
+
+            // 推測リセット
+            guesses = [];
+            renderGrid();
+            guessInput.value = '';
+            guessInput.disabled = false;
+            submitBtn.disabled = false;
+            currentStateSpan.innerHTML = '🟩🟨⬜ 推測受付中';
+            updateRemainingDisplay();
+        }
+
+        // グリッド描画 (動的に文字数に合わせる)
+        function renderGrid() {
+            guessesGrid.innerHTML = '';
+            const wordLen = currentWord ? currentWord.length : 5; // デフォルト5
+            for (let r = 0; r < maxGuesses; r++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'guess-row';
+                if (r < guesses.length) {
+                    const guess = guesses[r];
+                    for (let i = 0; i < wordLen; i++) {
+                        const tile = document.createElement('div');
+                        tile.className = 'tile';
+                        tile.textContent = guess[i] || '';
+                        if (currentWord && guess[i]) {
+                            const targetChar = currentWord[i];
+                            if (guess[i] === targetChar) {
+                                tile.classList.add('green');
+                            } else if (currentWord.includes(guess[i])) {
+                                tile.classList.add('yellow');
+                            } else {
+                                tile.classList.add('gray');
+                            }
+                        } else {
+                            tile.classList.add('gray');
+                        }
+                        rowDiv.appendChild(tile);
+                    }
+                } else {
+                    // 空行
+                    for (let i = 0; i < wordLen; i++) {
+                        const tile = document.createElement('div');
+                        tile.className = 'tile';
+                        tile.textContent = '';
+                        rowDiv.appendChild(tile);
+                    }
+                }
+                guessesGrid.appendChild(rowDiv);
+            }
+        }
+
+        // 推測処理
+        function handleGuess() {
+            if (!currentWord) {
+                alert('お題がありません。「次の単語」を押してください。');
+                return;
+            }
+            if (guesses.length >= maxGuesses) {
+                alert('もう推測できません。次の単語へどうぞ。');
+                return;
+            }
+            let guess = guessInput.value.trim().toUpperCase();
+            if (guess.length !== currentWord.length) {
+                alert(`この単語は ${currentWord.length} 文字です。`);
+                return;
+            }
+            guesses.push(guess);
+            renderGrid();
+
+            if (guess === currentWord) {
+                currentStateSpan.innerHTML = '🎉 正解！ おめでとう！';
+                guessInput.disabled = true;
+                submitBtn.disabled = true;
+            } else if (guesses.length === maxGuesses) {
+                currentStateSpan.innerHTML = `😢 残念… 答えは 「${currentWord}」`;
+                guessInput.disabled = true;
+                submitBtn.disabled = true;
+            }
+
+            guessInput.value = '';
+            guessInput.focus();
+            updateRemainingDisplay();
+        }
+
+        // 次の単語ボタン
+        function nextWord() {
+            if (remainingWords.length === 0 && !currentWord) {
+                if (confirm('全ての単語を使いました。最初からやり直しますか？')) {
+                    remainingWords = shuffleArray([...uniqueCatalog]);
+                    updateRemainingDisplay();
+                    loadNextWord();
+                }
+                return;
+            }
+            // まだ残りがあるが、もしかしたらcurrentWordは最後の一個かもしれない
+            if (remainingWords.length === 0 && currentWord) {
+                // 最後の単語を使い終わったとき、次の単語はもうない → 終了表示
+                currentWord = '';
+                targetPlaceholder.textContent = '🎉 おわり';
+                lengthDisplay.textContent = '-';
+                hintContainer.innerHTML = '';
+                currentStateSpan.innerHTML = '全問クリア';
+                guesses = [];
+                renderGrid();
+                guessInput.disabled = true;
+                submitBtn.disabled = true;
+                updateRemainingDisplay();
+                return;
+            }
+            loadNextWord();
+        }
+
+        // イベント登録
+        submitBtn.addEventListener('click', handleGuess);
+        guessInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleGuess();
+        });
+        nextBtn.addEventListener('click', nextWord);
+
+        // スタート
+        initGame();
+    })();
+</script>
+</body>
+</html>
